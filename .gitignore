@@ -1,0 +1,5 @@
+/.idea/
+/vendor/
+/src/cache/
+composer.lock
+/lsp/

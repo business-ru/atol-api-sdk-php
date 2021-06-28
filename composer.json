@@ -1,0 +1,27 @@
+{
+	"name": "hotdog666/atol-api-sdk-php",
+	"version": "1.0.0",
+	"description": "SDK для работы с Atol API",
+	"type": "library",
+	"license": "proprietary",
+	"authors": [
+		{
+			"name": "Alexandr Nikitin",
+			"email": "a.nikitin@mail.business.ru"
+		}
+	],
+	"require": {
+		"php": ">=7.4",
+		"ext-curl": "*",
+		"ext-json": "*",
+		"symfony/http-client": "^5.3",
+		"symfony/cache": "^5.3"
+	},
+	"autoload": {
+		"psr-4": {
+			"Atol\\Api\\": "src/",
+			"Atol\\Api\\Exception\\": "src/Exception",
+			"Atol\\Api\\Http\\": "src/Http"
+		}
+	}
+}
