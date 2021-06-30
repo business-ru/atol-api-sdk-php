@@ -15,14 +15,15 @@
 		"ext-curl": "*",
 		"ext-json": "*",
 		"symfony/http-client": "^5.3",
+		"symfony/http-kernel": "^5.3",
 		"symfony/cache": "^5.3",
-		"symfony/http-foundation": "^5.3.2"
+		"symfony/http-foundation": "^5.3.2",
+		"predis/predis": "^1.1"
 	},
 	"autoload": {
 		"psr-4": {
 			"Atol\\Api\\": "src/",
-			"Atol\\Api\\Exception\\": "src/Exception",
-			"Atol\\Api\\Http\\": "src/Http"
+			"Atol\\Api\\Exception\\": "src/Exception"
 		}
 	}
 }

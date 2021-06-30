@@ -11,7 +11,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * Class AtolClient - SDK Atol API
  * @package Atol\Api
  */
-class AtolClient
+final class AtolClient
 {
 	/**
 	 * Предоставляет гибкие методы для синхронного или асинхронного запроса ресурсов HTTP.
