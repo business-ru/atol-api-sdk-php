@@ -5,6 +5,11 @@ namespace Atol\Api;
 use Predis\Client;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -15,7 +20,7 @@ final class AtolClient
 {
 	/**
 	 * Предоставляет гибкие методы для синхронного или асинхронного запроса ресурсов HTTP.
-	 * @var \Symfony\Contracts\HttpClient\HttpClientInterface|null
+	 * @var HttpClientInterface|null
 	 */
 	private ?HttpClientInterface $client;
 
@@ -48,12 +53,12 @@ final class AtolClient
 	 * @param string $account - url аккаунта
 	 * @param string|null $login - Логин пользователя
 	 * @param string|null $password -  Пароль интеграции в аккаунте
-	 * @param \Symfony\Contracts\HttpClient\HttpClientInterface|null $client
-	 * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+	 * @param HttpClientInterface|null $client
+	 * @throws ClientExceptionInterface
+	 * @throws DecodingExceptionInterface
+	 * @throws RedirectionExceptionInterface
+	 * @throws ServerExceptionInterface
+	 * @throws TransportExceptionInterface
 	 * @throws \JsonException
 	 */
 	public function __construct(
@@ -102,11 +107,11 @@ final class AtolClient
 	 * @param array $params - Параметры
 	 * @return array|string
 	 * @throws \JsonException
-	 * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+	 * @throws ClientExceptionInterface
+	 * @throws DecodingExceptionInterface
+	 * @throws RedirectionExceptionInterface
+	 * @throws ServerExceptionInterface
+	 * @throws TransportExceptionInterface
 	 */
 	public function request(string $method, string $model, array $params = [])
 	{
@@ -135,17 +140,17 @@ final class AtolClient
 	/**
 	 * Получаем токен
 	 * @return string
-	 * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-	 * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+	 * @throws ClientExceptionInterface
+	 * @throws DecodingExceptionInterface
+	 * @throws RedirectionExceptionInterface
+	 * @throws ServerExceptionInterface
+	 * @throws TransportExceptionInterface
 	 * @throws \JsonException
 	 */
 	private function getNewToken(): string
 	{
 		#Получаем новый токен
-		$token = $this->request(
+		$this->token = $this->request(
 			"POST",
 			"getToken",
 			[
@@ -153,7 +158,6 @@ final class AtolClient
 				"pass" => $this->integrationPassword
 			]
 		)["token"];
-		$this->token = $token;
 		return $this->token;
 	}
 }
