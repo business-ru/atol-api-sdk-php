@@ -37,4 +37,28 @@ REDIS_DSN = redis://Наименование контейнера redis:Наим
 */
 private ?AtolClient $atolClient = null;
 
+/**
+* Общий метод, для любой модели
+* Метод позволяет выполнить запрос к API OFD
+* Для atol-api-sdk-php
+* @param string $method - Наименование метода
+* @param string $model - Наименование модели
+* @param array<string, mixed> $params - Параметры запроса
+* @return int|mixed|string[]
+* @throws ClientExceptionInterface
+* @throws DecodingExceptionInterface
+* @throws RedirectionExceptionInterface
+* @throws ServerExceptionInterface
+* @throws TransportExceptionInterface
+* @throws \Exception
+*/
+public function atolApiRequest(string $method, string $model, array $params = [])
+{
+	#Создаем объект SDK Atol Api
+	$this->atolClient = new AtolClient($this->account, $this->userLogin, $this->integrationPassword);
+	#Отправляем запрос
+	$this->response = $this->atolClient->request($method, $model, $params);
+	return $this->response;
+}
+
 ```
