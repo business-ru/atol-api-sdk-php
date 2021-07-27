@@ -2,6 +2,7 @@
 
 namespace Atol\Api;
 
+use Atol\Api\Exception\AtolApiClientException;
 use Predis\Client;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 use Symfony\Component\HttpClient\HttpClient;
@@ -61,12 +62,8 @@ class AtolClient
 	 * @throws TransportExceptionInterface
 	 * @throws \JsonException
 	 */
-	public function __construct(
-		string $account,
-		string $login = null,
-		string $password = null,
-		HttpClientInterface $client = null
-	) {
+	public function __construct(string $account, string $login, string $password, HttpClientInterface $client = null)
+	{
 		#Получаем логин для токена
 		$this->userLogin = $login;
 		#Получаем пароль для токена
@@ -101,43 +98,6 @@ class AtolClient
 	}
 
 	/**
-	 * Метод позволяет выполнить запрос к Atol API
-	 * @param string $method - Метод
-	 * @param string $model - Модель
-	 * @param array $params - Параметры
-	 * @return array|string
-	 * @throws \JsonException
-	 * @throws ClientExceptionInterface
-	 * @throws DecodingExceptionInterface
-	 * @throws RedirectionExceptionInterface
-	 * @throws ServerExceptionInterface
-	 * @throws TransportExceptionInterface
-	 */
-	public function request(string $method, string $model, array $params = [])
-	{
-		#Создаем ссылку
-		$url = $this->account . $model;
-		#Отправляем request запрос
-		$response = $this->client->request(
-			strtoupper($method),
-			$url,
-			['json' => $params],
-		);
-		#Получаем статус запроса
-		$statusCode = $response->getStatusCode();
-		if ($statusCode === 200) {
-			return json_decode(
-				$response->getContent(false),
-				true,
-				512,
-				JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
-			);
-		}
-		#false - убрать throw от Symfony.....
-		return $response->toArray(false);
-	}
-
-	/**
 	 * Получаем токен
 	 * @return string
 	 * @throws ClientExceptionInterface
@@ -159,5 +119,118 @@ class AtolClient
 			]
 		)["token"];
 		return $this->token;
+	}
+
+	/**
+	 * Метод позволяет выполнить запрос к Atol API
+	 * @param string $method - Метод
+	 * @param string $model - Модель
+	 * @param array $params - Параметры
+	 * @return array|string
+	 * @throws \JsonException
+	 * @throws ClientExceptionInterface
+	 * @throws DecodingExceptionInterface
+	 * @throws RedirectionExceptionInterface
+	 * @throws ServerExceptionInterface
+	 * @throws TransportExceptionInterface
+	 */
+	public function request(string $method, string $model, array $params = [])
+	{
+		#Для получения токена структура запроса: {{url_v4}}/{{possystem}}/{{api_version}}/getToken
+		if ($model === "getToken") {
+			#Создаем ссылку
+			$url = mb_substr($this->account, 0, -2) . $model;
+			#Для получения данных с других запросов: {{url_v4}}/{{possystem}}/{{api_version}}/1/$model
+		} else {
+			#Создаем ссылку
+			$url = $this->account . $model;
+		}
+		#Отправляем request запрос
+		$response = $this->client->request(
+			strtoupper($method),
+			$url,
+			['body' => json_encode($params, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)]
+		);
+		#Получаем статус запроса
+		$statusCode = $response->getStatusCode();
+		if ($statusCode === 200) {
+			return json_decode(
+				$response->getContent(false),
+				true,
+				512,
+				JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT
+			);
+		}
+		#false - убрать throw от Symfony.....
+		return $response->toArray(false);
+	}
+
+	/**
+	 * Метод позволяет выполнить запрос к API OFD
+	 * @param array $params - Параметры запроса
+	 * @return string
+	 * @throws ClientExceptionInterface
+	 * @throws DecodingExceptionInterface
+	 * @throws RedirectionExceptionInterface
+	 * @throws ServerExceptionInterface
+	 * @throws TransportExceptionInterface
+	 * @throws \JsonException
+	 * @throws AtolApiClientException
+	 */
+	public function sell(array $params): string
+	{
+		$response = $this->request(
+			"POST",
+			"sell",
+			$params
+		);
+		if (is_null($response["error"])) {
+			return $response["uuid"];
+		}
+		throw new AtolApiClientException($response["error"]["text"], $response["error"]["code"]);
+	}
+
+	/**
+	 * Метод позволяет выполнить запрос к API OFD
+	 * @param array $params - Параметры запроса
+	 * @return string
+	 * @throws ClientExceptionInterface
+	 * @throws DecodingExceptionInterface
+	 * @throws RedirectionExceptionInterface
+	 * @throws ServerExceptionInterface
+	 * @throws TransportExceptionInterface
+	 * @throws \JsonException
+	 * @throws AtolApiClientException
+	 */
+	public function sellRefund(array $params): string
+	{
+		$response = $this->request(
+			"POST",
+			"sell_refund",
+			$params
+		);
+		if (is_null($response["error"])) {
+			return $response["uuid"];
+		}
+		throw new AtolApiClientException($response["error"]["text"], $response["error"]["code"]);
+	}
+
+	/**
+	 * Метод позволяет выполнить запрос к API OFD
+	 * @param string $uuID
+	 * @return array
+	 * @throws ClientExceptionInterface
+	 * @throws DecodingExceptionInterface
+	 * @throws RedirectionExceptionInterface
+	 * @throws ServerExceptionInterface
+	 * @throws TransportExceptionInterface
+	 * @throws \JsonException
+	 */
+	public function report(string $uuID): array
+	{
+		return $this->request(
+			"GET",
+			"report/$uuID"
+		);
 	}
 }
