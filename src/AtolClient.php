@@ -60,7 +60,7 @@ class AtolClient
 	 * @throws RedirectionExceptionInterface
 	 * @throws ServerExceptionInterface
 	 * @throws TransportExceptionInterface
-	 * @throws \JsonException
+	 * @throws JsonException
 	 */
 	public function __construct(string $account, string $login, string $password, HttpClientInterface $client = null)
 	{
@@ -75,26 +75,32 @@ class AtolClient
 		);
 		#Получаем ссылку от аккаунта
 		$this->account = $account;
-		# HttpClient - выбирает транспорт cURL если расширение PHP cURL включено,
-		# и возвращается к потокам PHP в противном случае
-		# Добавляем в header токен из cache
+		#HttpClient - выбирает транспорт cURL если расширение PHP cURL включено
 		$this->client = $client ?? HttpClient::create(
 				[
 					'http_version' => '2.0',
 					'headers' => [
 						'Content-Type' => 'application/json; charset=utf-8',
-						'Token' => $cacheRedis->get('atolTokenCache')
 					]
 				]
 			);
 		#Проверяем, есть токен в cache или нет
-		if ($cacheRedis->exists('atolTokenCache') === 0) {
+		if (!$cacheRedis->exists('atolTokenCache')) {
 			#Добавляем токен в cache на 10 часов
-			$this->token = $cacheRedis->setex('atolTokenCache', 83000, $this->getNewToken());
-		} else {
+			$cacheRedis->setex('atolTokenCache', 83000, $this->getNewToken());
 			#Получаем текущий токен
 			$this->token = $cacheRedis->get('atolTokenCache');
 		}
+		#Добавляем в header токен из cache
+		$this->client = HttpClient::create(
+			[
+				'http_version' => '2.0',
+				'headers' => [
+					'Content-Type' => 'application/json; charset=utf-8',
+					'Token' => $cacheRedis->get('atolTokenCache')
+				]
+			]
+		);
 	}
 
 	/**
@@ -163,74 +169,5 @@ class AtolClient
 		}
 		#false - убрать throw от Symfony.....
 		return $response->toArray(false);
-	}
-
-	/**
-	 * Метод позволяет выполнить запрос к API OFD
-	 * @param array $params - Параметры запроса
-	 * @return string
-	 * @throws ClientExceptionInterface
-	 * @throws DecodingExceptionInterface
-	 * @throws RedirectionExceptionInterface
-	 * @throws ServerExceptionInterface
-	 * @throws TransportExceptionInterface
-	 * @throws \JsonException
-	 * @throws AtolApiClientException
-	 */
-	public function sell(array $params): string
-	{
-		$response = $this->request(
-			"POST",
-			"sell",
-			$params
-		);
-		if (is_null($response["error"])) {
-			return $response["uuid"];
-		}
-		throw new AtolApiClientException($response["error"]["text"], $response["error"]["code"]);
-	}
-
-	/**
-	 * Метод позволяет выполнить запрос к API OFD
-	 * @param array $params - Параметры запроса
-	 * @return string
-	 * @throws ClientExceptionInterface
-	 * @throws DecodingExceptionInterface
-	 * @throws RedirectionExceptionInterface
-	 * @throws ServerExceptionInterface
-	 * @throws TransportExceptionInterface
-	 * @throws \JsonException
-	 * @throws AtolApiClientException
-	 */
-	public function sellRefund(array $params): string
-	{
-		$response = $this->request(
-			"POST",
-			"sell_refund",
-			$params
-		);
-		if (is_null($response["error"])) {
-			return $response["uuid"];
-		}
-		throw new AtolApiClientException($response["error"]["text"], $response["error"]["code"]);
-	}
-
-	/**
-	 * Метод позволяет выполнить запрос к API OFD
-	 * @param string $uuID
-	 * @return array
-	 * @throws ClientExceptionInterface
-	 * @throws DecodingExceptionInterface
-	 * @throws RedirectionExceptionInterface
-	 * @throws ServerExceptionInterface
-	 * @throws TransportExceptionInterface
-	 * @throws \JsonException
-	 */
-	public function report(string $uuID): array
-	{
-		return $this->request(
-			"GET",
-			"report/$uuID"
-		);
 	}
 }
