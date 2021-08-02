@@ -1,6 +1,6 @@
 {
 	"name": "hotdog666/atol-api-sdk-php",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "SDK для работы с Atol API",
 	"type": "library",
 	"license": "proprietary",

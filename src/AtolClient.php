@@ -3,6 +3,7 @@
 namespace Atol\Api;
 
 use Atol\Api\Exception\AtolApiClientException;
+use JsonException;
 use Predis\Client;
 use Symfony\Component\Cache\Adapter\RedisAdapter;
 use Symfony\Component\HttpClient\HttpClient;
@@ -85,11 +86,11 @@ class AtolClient
 				]
 			);
 		#Проверяем, есть токен в cache или нет
-		if (!$cacheRedis->exists('atolTokenCache')) {
+		if (!$cacheRedis->exists('atolTokenCache' . $this->account)) {
 			#Добавляем токен в cache на 10 часов
-			$cacheRedis->setex('atolTokenCache', 83000, $this->getNewToken());
+			$cacheRedis->setex('atolTokenCache' . $this->account, 83000, $this->getNewToken());
 			#Получаем текущий токен
-			$this->token = $cacheRedis->get('atolTokenCache');
+			$this->token = $cacheRedis->get('atolTokenCache' . $this->account);
 		}
 		#Добавляем в header токен из cache
 		$this->client = HttpClient::create(
@@ -97,7 +98,7 @@ class AtolClient
 				'http_version' => '2.0',
 				'headers' => [
 					'Content-Type' => 'application/json; charset=utf-8',
-					'Token' => $cacheRedis->get('atolTokenCache')
+					'Token' => $cacheRedis->get('atolTokenCache' . $this->account)
 				]
 			]
 		);
@@ -111,19 +112,20 @@ class AtolClient
 	 * @throws RedirectionExceptionInterface
 	 * @throws ServerExceptionInterface
 	 * @throws TransportExceptionInterface
-	 * @throws \JsonException
+	 * @throws JsonException
 	 */
 	private function getNewToken(): string
 	{
 		#Получаем новый токен
-		$this->token = $this->request(
+		$token = $this->request(
 			"POST",
 			"getToken",
 			[
 				"login" => $this->userLogin,
 				"pass" => $this->integrationPassword
 			]
-		)["token"];
+		);
+		$this->token = $token["token"];
 		return $this->token;
 	}
 
@@ -133,7 +135,7 @@ class AtolClient
 	 * @param string $model - Модель
 	 * @param array $params - Параметры
 	 * @return array|string
-	 * @throws \JsonException
+	 * @throws JsonException
 	 * @throws ClientExceptionInterface
 	 * @throws DecodingExceptionInterface
 	 * @throws RedirectionExceptionInterface
