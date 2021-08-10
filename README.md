@@ -15,7 +15,7 @@
 ## Установка
 
 ```
-composer require hotdog666/atol-api-sdk-php
+composer require business-ru/atol-api-sdk-php
 ```
 
 Документация: https://online.atol.ru/files/API_atol_online_v4.pdf
