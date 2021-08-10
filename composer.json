@@ -22,8 +22,7 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"Atol\\Api\\": "src/",
-			"Atol\\Api\\Exception\\": "src/Exception"
+			"Atol\\Api\\": "src/"
 		}
 	}
 }
