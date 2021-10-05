@@ -2,9 +2,10 @@
 
 namespace Atol\Api;
 
+use Atol\Api\Exception\SimpleFileCacheException;
 use JsonException;
-use Predis\Client;
-use Symfony\Component\Cache\Adapter\RedisAdapter;
+use Psr\SimpleCache\CacheInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
@@ -12,6 +13,7 @@ use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 
 /**
  * Class AtolClient - SDK Atol API
@@ -50,67 +52,61 @@ class AtolClient
     private string $integrationPassword;
 
     /**
+     * @var CacheInterface|null
+     */
+    private ?CacheInterface $cache;
+
+    /**
      * SymfonyHttpClient constructor.
      * @param string $account - url аккаунта
      * @param string $login - Логин пользователя
      * @param string $password - Пароль интеграции в аккаунте
      * @param HttpClientInterface|null $client
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
+     * @param CacheInterface|null $cacheInterface - Psr cache
+     * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
+     * @throws TransportExceptionInterface|RedirectionExceptionInterface
+     * @throws SimpleFileCacheException|InvalidArgumentException
      * @throws JsonException
      */
-    public function __construct(string $account, string $login, string $password, HttpClientInterface $client = null)
-    {
+    public function __construct(
+        string $account,
+        string $login,
+        string $password,
+        HttpClientInterface $client = null,
+        CacheInterface $cacheInterface = null
+    ) {
         #Получаем логин для токена
         $this->userLogin = $login;
         #Получаем пароль для токена
         $this->integrationPassword = $password;
-        #Подключение к redis
-        $cacheRedis = RedisAdapter::createConnection(
-            getenv('REDIS_DSN'),
-            ['class' => Client::class, 'timeout' => 3]
-        );
         #Получаем ссылку от аккаунта
         $this->account = $account;
+        # Сохраняем токен в файловый кэш
+        $this->cache = $cacheInterface ?? new SimpleFileCache();
+
         #HttpClient - выбирает транспорт cURL если расширение PHP cURL включено
         $this->client = $client ?? HttpClient::create(
                 [
                     'http_version' => '2.0',
                     'headers' => [
-                        'Content-Type' => 'application/json; charset=utf-8',
+                        'Content-Type' => 'application/json; charset=utf-8'
                     ]
                 ]
             );
-        #Проверяем, есть токен в cache или нет
-        if (!$cacheRedis->exists('atolTokenCache' . $this->account)) {
-            #Добавляем токен в cache на 10 часов
-            $cacheRedis->setex('atolTokenCache' . $this->account, 83000, $this->getNewToken());
-            #Получаем текущий токен
-            $this->token = $cacheRedis->get('atolTokenCache' . $this->account);
+        if ($this->cache->has('AtolApiToken')) {
+            $this->token = $this->cache->get('AtolApiToken');
+        } else {
+            $this->token = $this->getNewToken();
+            $this->cache->set('AtolApiToken', $this->token);
         }
-        #Добавляем в header токен из cache
-        $this->client = HttpClient::create(
-            [
-                'http_version' => '2.0',
-                'headers' => [
-                    'Content-Type' => 'application/json; charset=utf-8',
-                    'Token' => $cacheRedis->get('atolTokenCache' . $this->account)
-                ]
-            ]
-        );
     }
 
     /**
      * Получаем токен
      * @return string
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
+     * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
+     * @throws TransportExceptionInterface|RedirectionExceptionInterface
+     * @throws SimpleFileCacheException|InvalidArgumentException
      * @throws JsonException
      */
     private function getNewToken(): string
@@ -133,33 +129,24 @@ class AtolClient
      * @param string $method - Метод
      * @param string $model - Модель
      * @param array $params - Параметры
-     * @return array
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
+     * @return array - Ответ запроса Atol API
+     * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
+     * @throws TransportExceptionInterface|RedirectionExceptionInterface
+     * @throws SimpleFileCacheException|InvalidArgumentException
      * @throws JsonException
      */
     public function request(string $method, string $model, array $params = []): array
     {
-        #Для получения токена структура запроса: {{url_v4}}/{{possystem}}/{{api_version}}/getToken
-        if ($model === "getToken") {
-            #Создаем ссылку
-            $url = mb_substr($this->account, 0, -2) . $model;
-            #Для получения данных с других запросов: {{url_v4}}/{{possystem}}/{{api_version}}/1/$model
-        } else {
-            #Создаем ссылку
-            $url = $this->account . $model;
-        }
-        #Отправляем request запрос
-        $response = $this->client->request(
-            strtoupper($method),
-            $url,
-            ['body' => json_encode($params, JSON_THROW_ON_ERROR)]
-        );
-        #Получаем статус запроса
+        $response = $this->sendRequest($method, $model, $params);
+        # Получаем статус запроса
         $statusCode = $response->getStatusCode();
+        # Токен просрочен
+        if ($statusCode === 401) {
+            $this->token = $this->getNewToken();
+            $this->cache->set('AtolApiToken', $this->token);
+            $response = $this->sendRequest($method, $model, $params);
+        }
+        # Запрос выполнен успешно
         if ($statusCode === 200) {
             return json_decode(
                 $response->getContent(false),
@@ -170,5 +157,88 @@ class AtolClient
         }
         #false - убрать throw от Symfony.....
         return $response->toArray(false);
+    }
+
+    /**
+     * Отправить HTTP запрос - клиентом
+     * @param string $method - Метод
+     * @param string $model - Модель
+     * @param array $params - Параметры
+     * @return ResponseInterface
+     * @throws InvalidArgumentException|SimpleFileCacheException
+     * @throws TransportExceptionInterface
+     * @throws JsonException
+     */
+    private function sendRequest(string $method, string $model, array $params = []): ResponseInterface
+    {
+        #Для получения токена структура запроса: {{url_v4}}/{{possystem}}/{{api_version}}/getToken
+        if ($model === "getToken") {
+            #Создаем ссылку
+            $url = mb_substr($this->account, 0, -2) . $model;
+            #Отправляем request запрос
+            return $this->client->request(
+                strtoupper($method),
+                $url,
+                [
+                    'body' => json_encode($params, JSON_THROW_ON_ERROR)
+                ]
+            );
+        }
+        #Для получения данных с других запросов: {{url_v4}}/{{possystem}}/{{api_version}}/1/$model
+        #Создаем ссылку
+        $url = $this->account . $model;
+        #Отправляем request запрос
+        return $this->client->request(
+            strtoupper($method),
+            $url,
+            [
+                'headers' => [
+                    'Token' => $this->cache->get('AtolApiToken')
+                ],
+                'body' => json_encode($params, JSON_THROW_ON_ERROR)
+            ]
+        );
+    }
+
+    /**
+     * Метод выполняет запрос на операцию "Приход"
+     * @param array $params - Параметры запроса
+     * @return array
+     * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
+     * @throws TransportExceptionInterface|RedirectionExceptionInterface
+     * @throws SimpleFileCacheException|InvalidArgumentException
+     * @throws JsonException
+     */
+    public function sell(array $params): array
+    {
+        return $this->request("POST", "sell", $params);
+    }
+
+    /**
+     * Метод выполняет запрос на операцию "Возврат прихода"
+     * @param array $params - Параметры запроса
+     * @return array
+     * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
+     * @throws TransportExceptionInterface|RedirectionExceptionInterface
+     * @throws SimpleFileCacheException|InvalidArgumentException
+     * @throws JsonException
+     */
+    public function sellRefund(array $params): array
+    {
+        return $this->request("POST", "sell_refund", $params);
+    }
+
+    /**
+     * Метод выполняет запрос на операцию "Результат обработки документа"
+     * @param string $uID - Уникальное значение чека
+     * @return array
+     * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
+     * @throws TransportExceptionInterface|RedirectionExceptionInterface
+     * @throws SimpleFileCacheException|InvalidArgumentException
+     * @throws JsonException
+     */
+    public function report(string $uID): array
+    {
+        return $this->request("GET", "report/$uID");
     }
 }

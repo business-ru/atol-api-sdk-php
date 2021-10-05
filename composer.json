@@ -1,28 +1,28 @@
 {
-	"name": "business-ru/atol-api-sdk-php",
-	"version": "1.0.1",
-	"description": "SDK для работы с Atol API",
-	"type": "library",
-	"license": "proprietary",
-	"authors": [
-		{
-			"name": "Alexandr Nikitin",
-			"email": "a.nikitin@mail.business.ru"
-		}
-	],
-	"require": {
-		"php": ">=7.4",
-		"ext-curl": "*",
-		"ext-json": "*",
-		"symfony/http-client": "^5.3",
-		"symfony/http-kernel": "^5.3",
-		"symfony/cache": "^5.3",
-		"symfony/http-foundation": "^5.3.2",
-		"predis/predis": "^1.1"
-	},
-	"autoload": {
-		"psr-4": {
-			"Atol\\Api\\": "src/"
-		}
-	}
+  "name": "business-ru/atol-api-sdk-php",
+  "version": "1.0.2",
+  "description": "SDK для работы с Atol API",
+  "type": "library",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Alexandr Nikitin",
+      "email": "a.nikitin@mail.business.ru"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "ext-curl": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "symfony/http-client": "^5.3",
+    "symfony/cache": "^5.3",
+    "psr/simple-cache": "^1.0",
+    "psr/log": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Atol\\Api\\": "src/"
+    }
+  }
 }
