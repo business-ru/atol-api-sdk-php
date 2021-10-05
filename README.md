@@ -44,20 +44,83 @@ $atolApiClient = new AtolClient($this->account, $this->userLogin, $this->integra
 
 ```php
 <?php
-$atolApiClient->sell($params);
+$params = [
+    "timestamp" => date("d.m.Y H:i:s"),
+    "external_id" => uniqid('', true),
+    "receipt" => [
+        "client" => [
+            "email" => "test@test.ru"
+        ],
+        "sno" => "osn",
+        "items" => [
+            [
+                "name" => "Чек Прихода №1",
+                "price" => 1,
+                "quantity" => 1,
+                "sum" => 1,
+                "measurement_unit" => "гр.",
+                "payment_method" => "full_prepayment",
+                "payment_object" => "payment",
+                "vat" => [
+                    "type" => "vat20",
+                ]
+            ]
+        ],
+        "payments" => [
+            [
+                "type" => 1,
+                "sum" => 1
+            ]
+        ],
+        "total" => 1
+    ]
+];
+$sell = $atolApiClient->sell($params);
 ```
 
 #### Возврат прихода
 
 ```php
 <?php
-$atolApiClient->sellRefund($params);
+$params = [
+    "timestamp" => date("d.m.Y H:i:s"),
+    "external_id" => uniqid('', true),
+    "receipt" => [
+        "client" => [
+            "email" => "test@test.ru"
+        ],
+        "sno" => "osn",
+        "items" => [
+            [
+                "name" => "Чек Прихода №1",
+                "price" => 1,
+                "quantity" => 1,
+                "sum" => 1,
+                "measurement_unit" => "гр.",
+                "payment_method" => "full_prepayment",
+                "payment_object" => "payment",
+                "vat" => [
+                    "type" => "vat20",
+                ]
+            ]
+        ],
+        "payments" => [
+            [
+                "type" => 1,
+                "sum" => 1
+            ]
+        ],
+        "total" => 1
+    ]
+];
+$sellRefund = $atolApiClient->sellRefund($params);
 ```
 
 #### Результат обработки документа
 
 ```php
 <?php
-$atolApiClient->report($uID);
+$uuID = $sellRefund["uuid"];
+$atolApiClient->report($uuID);
 ```
 

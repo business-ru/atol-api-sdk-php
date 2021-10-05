@@ -230,15 +230,15 @@ class AtolClient
 
     /**
      * Метод выполняет запрос на операцию "Результат обработки документа"
-     * @param string $uID - Уникальное значение чека
+     * @param string $uuID - Уникальное значение чека
      * @return array
      * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
      * @throws TransportExceptionInterface|RedirectionExceptionInterface
      * @throws SimpleFileCacheException|InvalidArgumentException
      * @throws JsonException
      */
-    public function report(string $uID): array
+    public function report(string $uuID): array
     {
-        return $this->request("GET", "report/$uID");
+        return $this->request("GET", "report/$uuID");
     }
 }
