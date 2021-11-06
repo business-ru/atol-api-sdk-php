@@ -142,18 +142,13 @@ class AtolClient
         $statusCode = $response->getStatusCode();
         # Токен просрочен
         if ($statusCode === 401) {
+            if (array_key_exists('result', $response->toArray(false))) {
+                $ffdError = $response->toArray(false);
+                throw new JsonException($ffdError["message"], $ffdError["result"]);
+            }
             $this->token = $this->getNewToken();
             $this->cache->set('AtolApiToken', $this->token);
             $response = $this->sendRequest($method, $model, $params);
-        }
-        # Запрос выполнен успешно
-        if ($statusCode === 200) {
-            return json_decode(
-                $response->getContent(false),
-                true,
-                512,
-                JSON_THROW_ON_ERROR
-            );
         }
         #false - убрать throw от Symfony.....
         return $response->toArray(false);
@@ -167,7 +162,6 @@ class AtolClient
      * @return ResponseInterface
      * @throws InvalidArgumentException|SimpleFileCacheException
      * @throws TransportExceptionInterface
-     * @throws JsonException
      */
     private function sendRequest(string $method, string $model, array $params = []): ResponseInterface
     {
@@ -180,7 +174,7 @@ class AtolClient
                 strtoupper($method),
                 $url,
                 [
-                    'body' => json_encode($params, JSON_THROW_ON_ERROR)
+                    'body' => json_encode($params)
                 ]
             );
         }
@@ -195,7 +189,7 @@ class AtolClient
                 'headers' => [
                     'Token' => $this->cache->get('AtolApiToken')
                 ],
-                'body' => json_encode($params, JSON_THROW_ON_ERROR)
+                'body' => json_encode($params)
             ]
         );
     }
