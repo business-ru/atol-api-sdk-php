@@ -113,7 +113,7 @@ class AtolClient
     private function getNewToken(): string
     {
         #Получаем новый токен
-        $token = $this->request(
+        $response = $this->sendRequest(
             "POST",
             "getToken",
             [
@@ -121,6 +121,13 @@ class AtolClient
                 "pass" => $this->integrationPassword
             ]
         );
+
+        $token = $response->toArray(false);
+        if (!array_key_exists('token', $token)) {
+            $textError = $token['error']['text'];
+            $this->log('error', $textError, $token);
+            throw new JsonException($textError, $response->getStatusCode());
+        }
         $this->token = $token["token"];
         return $this->token;
     }
@@ -143,30 +150,23 @@ class AtolClient
         $statusCode = $response->getStatusCode();
         switch ($statusCode) {
             case 200:
-            {
                 return $response->toArray(false);
-            }
             case 401:
-            {
                 $ffdError = $response->toArray(false);
                 if (array_key_exists('result', $ffdError)) {
                     $this->log('error', $ffdError["message"], $ffdError);
-                    throw new JsonException($ffdError["message"], $ffdError["result"]);
+                    throw new JsonException($ffdError["message"], $response->getStatusCode());
                 }
                 $this->token = $this->getNewToken();
                 $this->cache->set('AtolApiToken', $this->token);
                 return $this->sendRequest($method, $model, $params)->toArray(false);
-            }
             case 500:
-            {
                 $this->log('critical', "500 Internal Server Error", [$response->getContent(false)]);
                 throw new JsonException("500 Internal Server Error", 500);
-            }
+
             default:
-            {
                 $this->log('error', "Ошибка Atol: ", [$response->getContent(false)]);
-                throw new JsonException("Ошибка Atol: ", $response->getStatusCode());
-            }
+                throw new JsonException("Ошибка Atol: " . $response->getContent(false), $response->getStatusCode());
         }
     }
 
