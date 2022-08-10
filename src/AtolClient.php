@@ -2,6 +2,7 @@
 
 namespace Atol\Api;
 
+use Atol\Api\Adapter\IlluminateAtolApi\Log\Logger;
 use Atol\Api\Exception\SimpleFileCacheException;
 use JsonException;
 use Psr\SimpleCache\CacheInterface;
@@ -140,18 +141,33 @@ class AtolClient
         $response = $this->sendRequest($method, $model, $params);
         # Получаем статус запроса
         $statusCode = $response->getStatusCode();
-        # Токен просрочен
-        if ($statusCode === 401) {
-            if (array_key_exists('result', $response->toArray(false))) {
-                $ffdError = $response->toArray(false);
-                throw new JsonException($ffdError["message"], $ffdError["result"]);
+        switch ($statusCode) {
+            case 200:
+            {
+                return $response->toArray(false);
             }
-            $this->token = $this->getNewToken();
-            $this->cache->set('AtolApiToken', $this->token);
-            $response = $this->sendRequest($method, $model, $params);
+            case 401:
+            {
+                $ffdError = $response->toArray(false);
+                if (array_key_exists('result', $ffdError)) {
+                    $this->log('error', $ffdError["message"], $ffdError);
+                    throw new JsonException($ffdError["message"], $ffdError["result"]);
+                }
+                $this->token = $this->getNewToken();
+                $this->cache->set('AtolApiToken', $this->token);
+                return $this->sendRequest($method, $model, $params)->toArray(false);
+            }
+            case 500:
+            {
+                $this->log('critical', "500 Internal Server Error", [$response->getContent(false)]);
+                throw new JsonException("500 Internal Server Error", 500);
+            }
+            default:
+            {
+                $this->log('error', "Ошибка Atol: ", [$response->getContent(false)]);
+                throw new JsonException("Ошибка Atol: ", $response->getStatusCode());
+            }
         }
-        #false - убрать throw от Symfony.....
-        return $response->toArray(false);
     }
 
     /**
@@ -234,5 +250,11 @@ class AtolClient
     public function report(string $uuID): array
     {
         return $this->request("GET", "report/$uuID");
+    }
+
+    private function log(string $level, string $message, array $context = []): void
+    {
+        $logger = new Logger();
+        $logger->$level($message, $context);
     }
 }

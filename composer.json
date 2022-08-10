@@ -18,11 +18,14 @@
     "symfony/http-client": "^5.3",
     "symfony/cache": "^5.3",
     "psr/simple-cache": "^1.0",
-    "psr/log": "^1.0"
+    "psr/log": "^1.0",
+    "monolog/monolog": "^2.6"
   },
   "autoload": {
     "psr-4": {
-      "Atol\\Api\\": "src/"
+      "Atol\\Api\\": "src/",
+      "Atol\\Api\\Adapter\\": "src/Adapter/",
+      "Atol\\Api\\Adapter\\IlluminateAtolApi\\": "src/Adapter/Illuminate/"
     }
   }
 }
