@@ -94,11 +94,11 @@ class AtolClient
                     ]
                 ]
             );
-        if ($this->cache->has('AtolApiToken')) {
-            $this->token = $this->cache->get('AtolApiToken');
+        if ($this->cache->has('AtolApiToken ' . $this->userLogin)) {
+            $this->token = $this->cache->get('AtolApiToken ' . $this->userLogin);
         } else {
             $this->token = $this->getNewToken();
-            $this->cache->set('AtolApiToken', $this->token);
+            $this->cache->set('AtolApiToken ' . $this->userLogin, $this->token);
         }
     }
 
@@ -158,7 +158,7 @@ class AtolClient
                     throw new JsonException($ffdError["message"], $response->getStatusCode());
                 }
                 $this->token = $this->getNewToken();
-                $this->cache->set('AtolApiToken', $this->token);
+                $this->cache->set('AtolApiToken ' . $this->userLogin, $this->token);
                 return $this->sendRequest($method, $model, $params)->toArray(false);
             case 500:
                 $this->log('critical', "500 Internal Server Error", [$response->getContent(false)]);
@@ -203,7 +203,7 @@ class AtolClient
             $url,
             [
                 'headers' => [
-                    'Token' => $this->cache->get('AtolApiToken')
+                    'Token' => $this->cache->get('AtolApiToken ' . $this->userLogin)
                 ],
                 'body' => json_encode($params)
             ]

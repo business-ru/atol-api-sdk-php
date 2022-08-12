@@ -1,6 +1,6 @@
 {
   "name": "business-ru/atol-api-sdk-php",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "SDK для работы с Atol API",
   "type": "library",
   "license": "proprietary",
