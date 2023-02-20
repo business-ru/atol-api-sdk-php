@@ -151,22 +151,27 @@ class AtolClient
         switch ($statusCode) {
             case 200:
                 return $response->toArray(false);
+            case 400:
+                return [
+                    'response' => json_decode($response->getContent(false), true),
+                    'code' => $statusCode
+                ];
             case 401:
-                $ffdError = $response->toArray(false);
-                if (array_key_exists('result', $ffdError)) {
-                    $this->log('error', $ffdError["message"], $ffdError);
-                    throw new JsonException($ffdError["message"], $response->getStatusCode());
+                $ffdVersionError = $response->toArray(false);
+                if (array_key_exists('result', $ffdVersionError)) {
+                    $this->log('error', $ffdVersionError["message"], $ffdVersionError);
+                    throw new JsonException($ffdVersionError["message"], $response->getStatusCode());
                 }
                 $this->token = $this->getNewToken();
                 $this->cache->set('AtolApiToken ' . $this->userLogin, $this->token);
                 return $this->sendRequest($method, $model, $params)->toArray(false);
             case 500:
-                $this->log('critical', "500 Internal Server Error", [$response->getContent(false)]);
-                throw new JsonException("500 Internal Server Error", 500);
+                $this->log('critical', "SDK. 500 Internal Server Error", [$response->getContent(false)]);
+                throw new JsonException("SDK. 500 Internal Server Error", 500);
 
             default:
-                $this->log('error', "Ошибка Atol: ", [$response->getContent(false)]);
-                throw new JsonException("Ошибка Atol: " . $response->getContent(false), $response->getStatusCode());
+                $this->log('error', "SDK. Ошибка Atol: ", [$response->getContent(false)]);
+                throw new JsonException("SDK. Ошибка Atol: " . $response->getContent(false), $response->getStatusCode());
         }
     }
 
