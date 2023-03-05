@@ -54,7 +54,7 @@ class Logger implements LogInterface
         $level = $config['level'] ?? 'debug';
 
         if (isset($this->levels[$level])) {
-            return $this->levels[$level];
+            return $this->levels[$level]->value;
         }
 
         throw new InvalidArgumentException('Invalid log level.');
