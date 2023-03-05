@@ -33,7 +33,7 @@ final class SimpleFileCache implements CacheInterface
     /**
      * Получение значения по ключу
      * @param string $key - Уникальный ключ этого элемента в кеше.
-     * @param null $default - Значение по умолчанию, возвращаемое, если ключ не существует.
+     * @param mixed|null $default - Значение по умолчанию, возвращаемое, если ключ не существует.
      * @return string|bool
      * @throws SimpleFileCacheException
      */
