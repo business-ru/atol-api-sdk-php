@@ -83,7 +83,15 @@ class AtolClient
         $method = strtoupper($method);
 
         $url = $this->account . $model;
-        return $this->client->request($method, $url, $options);
+        try {
+            return $this->client->request($method, $url, $options);
+        } catch (Throwable $throwable) {
+            $this->refreshToken();
+            $options['headers'] = [
+                'Token' => $this->cache->get('AtolApiToken ' . $this->userLogin)
+            ];
+            return $this->client->request($method, $url, $options);
+        }
     }
 
     private function get(string $model, array $options): array
@@ -105,14 +113,7 @@ class AtolClient
     {
         $response = $this->postRequest($model, $options);
 
-        $statusCode = $response->getStatusCode();
-
         $this->throwStatusCode($response);
-
-        if ($statusCode === 401) {
-//            $options['token'] = $this->token;
-            $response = $this->postRequest($model, $options);
-        }
 
         return $response->toArray(false);
     }
