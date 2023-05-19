@@ -90,7 +90,7 @@ class AtolClient
     {
         $options = [
             'headers' => [
-                    'Token' => $this->cache->get('AtolApiToken ' . $this->userLogin)
+                'Token' => $this->cache->get('AtolApiToken ' . $this->userLogin)
             ],
             'query' => $options
         ];
@@ -110,7 +110,7 @@ class AtolClient
         $this->throwStatusCode($response);
 
         if ($statusCode === 401) {
-            $options['token'] = $this->token;
+//            $options['token'] = $this->token;
             $response = $this->postRequest($model, $options);
         }
 
@@ -161,13 +161,21 @@ class AtolClient
     {
         try {
             $model = 'getToken';
+            $method = 'POST';
             # Для получения токена структура запроса: {{url_v4}}/{{possystem}}/{{api_version}}/getToken
             $url = mb_substr($this->account, 0, -2) . $model;
             $options = [
                 "login" => $this->userLogin,
                 "pass" => $this->integrationPassword
             ];
-            $this->token = $this->client->request($model, $url, $options)['token'];
+            $params = [
+                'headers' => [
+                    'Content-Type' => 'application/json'
+                ],
+                'body' => json_encode($options)
+            ];
+            $request = $this->client->request($method, $url, $params)->toArray(false);
+            $this->token = $request['token'];
         } catch (Throwable $throwable) {
             $this->log('error', 'Ошибка при получении токена', [
                 'code' => $throwable->getCode(),
