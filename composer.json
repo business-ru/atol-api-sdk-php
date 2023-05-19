@@ -12,7 +12,7 @@
   ],
   "extra": {
     "branch-alias": {
-      "dev-main": "dev"
+      "dev-main": "dev-main"
     }
   },
   "require": {
