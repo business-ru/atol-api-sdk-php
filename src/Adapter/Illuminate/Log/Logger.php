@@ -31,14 +31,14 @@ class Logger implements LogInterface
      * @var array
      */
     protected array $levels = [
-        'debug' => Level::Debug,
-        'info' => Level::Info,
-        'notice' => Level::Notice,
-        'warning' => Level::Warning,
-        'error' => Level::Error,
-        'critical' => Level::Critical,
-        'alert' => Level::Alert,
-        'emergency' => Level::Emergency,
+        'debug' => MonologLogger::DEBUG,
+        'info' => MonologLogger::INFO,
+        'notice' => MonologLogger::NOTICE,
+        'warning' => MonologLogger::WARNING,
+        'error' => MonologLogger::ERROR,
+        'critical' => MonologLogger::CRITICAL,
+        'alert' => MonologLogger::ALERT,
+        'emergency' => MonologLogger::EMERGENCY,
     ];
 
     /**
@@ -54,7 +54,7 @@ class Logger implements LogInterface
         $level = $config['level'] ?? 'debug';
 
         if (isset($this->levels[$level])) {
-            return $this->levels[$level]->value;
+            return $this->levels[$level];
         }
 
         throw new InvalidArgumentException('Invalid log level.');
@@ -95,13 +95,13 @@ class Logger implements LogInterface
         $logger = $this->logger;
 
         $formatter = new LogstashFormatter('AtolApiSDK');
-        $record = new LogRecord(
-            datetime: new DateTimeImmutable(true),
-            channel: 'daily',
-            level: MonologLogger::toMonologLevel($level),
-            message: $message,
-            context: $context
-        );
+        $record = [
+            'level_name' => $level,
+            'level' => $this->level(['level' => $level]),
+            'channel' => 'daily',
+            'message' => $message,
+            'context' => $context
+        ];
         $formatter->format($record);
         $logFileDaily = $level . '-' . date("Y-m-d");
         $handler = new StreamHandler($this->logPath . "/$logFileDaily.log", $this->level(['level' => $level]));

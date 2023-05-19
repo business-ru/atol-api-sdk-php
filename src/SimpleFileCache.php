@@ -37,8 +37,11 @@ final class SimpleFileCache implements CacheInterface
      * @return string|bool
      * @throws SimpleFileCacheException
      */
-    public function get(string $key, mixed $default = null): string|bool
+    public function get($key, $default = null)
     {
+        if (!is_string($key)) {
+            throw new SimpleFileCacheException('Ключ должен быть строкой');
+        }
         $cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
 
         //Нет прав для чтения
@@ -57,13 +60,17 @@ final class SimpleFileCache implements CacheInterface
     /**
      * Запись в файл
      * @param string $key - Уникальный ключ этого элемента в кеше.
-     * @param mixed $value - Значение в кэше
+     * @param $value - Значение в кэше
      * @param null|int|DateInterval $ttl - Время хранения значения в секундах
      * @return bool
      * @throws SimpleFileCacheException
      */
-    public function set(string $key, mixed $value, null|int|DateInterval $ttl = null): bool
+    public function set($key, $value, $ttl = null): bool
     {
+        if (!is_string($key)) {
+            throw new SimpleFileCacheException('Ключ должен быть строкой');
+        }
+
         $cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
 
         //Нет прав для записи
@@ -82,7 +89,7 @@ final class SimpleFileCache implements CacheInterface
      * @param string $key - Уникальный ключ кеша удаляемого элемента.
      * @return bool
      */
-    public function delete(string $key): bool
+    public function delete($key): bool
     {
         $cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
         if (file_exists($cacheFile)) {
@@ -91,36 +98,36 @@ final class SimpleFileCache implements CacheInterface
         return false;
     }
 
-    public function clear(): bool
+    public function clear()
     {
         // TODO: Implement clear() method.
-        return false;
     }
 
-    public function getMultiple(iterable $keys, mixed $default = null): iterable
+    public function getMultiple($keys, $default = null)
     {
         // TODO: Implement getMultiple() method.
-        return [];
     }
 
-    public function setMultiple(iterable $values, null|int|\DateInterval $ttl = null): bool
+    public function setMultiple($values, $ttl = null)
     {
         // TODO: Implement setMultiple() method.
-        return false;
     }
 
-    public function deleteMultiple(iterable $keys): bool
+    public function deleteMultiple($keys)
     {
         // TODO: Implement deleteMultiple() method.
-        return false;
     }
 
     /**
      * Проверка на существование ключа
      * @param string $key - Уникальный ключ этого элемента в кеше.
+     * @throws SimpleFileCacheException
      */
-    public function has(string $key): bool
+    public function has($key): bool
     {
+        if (!is_string($key)) {
+            throw new SimpleFileCacheException('Ключ должен быть строкой');
+        }
         $cacheFile = $this->cachePath . DIRECTORY_SEPARATOR . $key;
 
         if (file_exists($cacheFile)) {

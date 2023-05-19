@@ -64,10 +64,6 @@ class AtolClient
      * @param string $password - Пароль интеграции в аккаунте
      * @param HttpClientInterface|null $client
      * @param CacheInterface|null $cacheInterface - Psr cache
-     * @throws ClientExceptionInterface|DecodingExceptionInterface|ServerExceptionInterface
-     * @throws TransportExceptionInterface|RedirectionExceptionInterface
-     * @throws SimpleFileCacheException|InvalidArgumentException
-     * @throws JsonException
      */
     public function __construct(
         string $account,
@@ -93,7 +89,7 @@ class AtolClient
                         'Content-Type' => 'application/json; charset=utf-8'
                     ]
                 ]
-            );
+        );
         if ($this->cache->has('AtolApiToken ' . $this->userLogin)) {
             $this->token = $this->cache->get('AtolApiToken ' . $this->userLogin);
         } else {
