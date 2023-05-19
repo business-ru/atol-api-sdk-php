@@ -1,6 +1,6 @@
 {
   "name": "business-ru/atol-api-sdk-php",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "SDK для работы с Atol API",
   "type": "library",
   "license": "proprietary",
@@ -12,25 +12,24 @@
   ],
   "extra": {
     "branch-alias": {
-      "dev-main": "1.0.8-dev"
+      "dev-main": "dev"
     }
   },
   "require": {
-    "php": "^7.4|^8.1",
+    "php": "^8.1",
     "ext-curl": "*",
     "ext-json": "*",
     "ext-mbstring": "*",
-    "symfony/http-client": "^v6.2",
-    "symfony/cache": "^v6.2",
+    "monolog/monolog": "^3.3",
     "psr/simple-cache": "^3.0",
     "psr/log": "^3.0",
-    "monolog/monolog": "^3.3"
+    "symfony/http-client": "^v6.2",
+    "symfony/cache": "^v6.2"
   },
   "autoload": {
     "psr-4": {
       "Atol\\Api\\": "src/",
-      "Atol\\Api\\Adapter\\": "src/Adapter/",
-      "Atol\\Api\\Adapter\\IlluminateAtolApi\\": "src/Adapter/Illuminate/"
+      "Atol\\Api\\Adapter\\": "src/Adapter/"
     }
   }
 }

@@ -1,18 +1,19 @@
 <?php
 
-namespace Atol\Api\Adapter\IlluminateAtolApi\Log;
+namespace Atol\Api\Adapter\Log;
 
-use Atol\Api\Adapter\IlluminateAtolApi\Interfaces\LogInterface;
 use Atol\Api\Exception\SimpleLogException;
 use Monolog\DateTimeImmutable;
 use Monolog\Formatter\LogstashFormatter;
+use Monolog\Handler\StreamHandler;
 use Monolog\Level;
 use Monolog\Logger as MonologLogger;
-use Monolog\Handler\StreamHandler;
 use Monolog\LogRecord;
 use Psr\Log\InvalidArgumentException;
+use Psr\Log\LoggerInterface;
+use Stringable;
 
-class Logger implements LogInterface
+class Logger implements LoggerInterface
 {
     /**
      * @var MonologLogger
@@ -23,7 +24,7 @@ class Logger implements LogInterface
      * Директория логов
      * @var string
      */
-    private string $logPath = __DIR__  . '/../../../../logs';
+    private string $logPath;
 
     /**
      * The Log levels.
@@ -62,38 +63,65 @@ class Logger implements LogInterface
 
     public function __construct()
     {
+        $this->logPath = getenv('PROJECT_LOGS_DIR');
+        if (!$this->logPath) {
+            $this->logPath = __DIR__ . '/../../../logs';
+        }
         if (!is_dir($this->logPath)
             && !mkdir($concurrentDirectory = $this->logPath)
             && !is_dir($concurrentDirectory)) {
-            throw new SimpleLogException('Невозможно создать директорию для хранения логов /src/logs/');
+            throw new SimpleLogException('Невозможно создать директорию для хранения логов logs');
         }
         $this->logger = new MonologLogger('AtolApiSDK');
     }
 
-    public function info(string $message, array $context = []): void
+    public function log($level, Stringable|string $message, array $context = []): void
+    {
+        $this->writeLog($level, $message, $context);
+    }
+
+    public function info(Stringable|string $message, array $context = []): void
     {
         $this->writeLog('info', $message, $context);
     }
 
-    public function error(string $message, array $context = []): void
+    public function error(Stringable|string $message, array $context = []): void
     {
         $this->writeLog('error', $message, $context);
     }
 
-    public function warning(string $message, array $context = []): void
+    public function warning(Stringable|string $message, array $context = []): void
     {
         $this->writeLog('warning', $message, $context);
     }
 
-    public function critical(string $message, array $context = []): void
+    public function critical(Stringable|string $message, array $context = []): void
     {
         $this->writeLog('critical', $message, $context);
     }
 
+    public function emergency(Stringable|string $message, array $context = []): void
+    {
+        $this->writeLog('emergency', $message, $context);
+    }
+
+    public function alert(Stringable|string $message, array $context = []): void
+    {
+        $this->writeLog('alert', $message, $context);
+    }
+
+    public function notice(Stringable|string $message, array $context = []): void
+    {
+        $this->writeLog('notice', $message, $context);
+    }
+
+    public function debug(Stringable|string $message, array $context = []): void
+    {
+        $this->writeLog('debug', $message, $context);
+    }
+
     private function writeLog(string $level, string $message, array $context = []): void
     {
-        $logger = $this->logger;
-
         $formatter = new LogstashFormatter('AtolApiSDK');
         $record = new LogRecord(
             datetime: new DateTimeImmutable(true),
@@ -107,7 +135,7 @@ class Logger implements LogInterface
         $handler = new StreamHandler($this->logPath . "/$logFileDaily.log", $this->level(['level' => $level]));
         $handler->setFormatter($formatter);
 
-        $logger->pushHandler($handler);
-        $logger->$level($message, $context);
+        $this->logger->pushHandler($handler);
+        $this->logger->$level($message, $context);
     }
 }

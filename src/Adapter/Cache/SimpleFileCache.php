@@ -1,9 +1,9 @@
 <?php
 
-namespace Atol\Api;
+namespace Atol\Api\Adapter\Cache;
 
-use DateInterval;
 use Atol\Api\Exception\SimpleFileCacheException;
+use DateInterval;
 use Psr\SimpleCache\CacheInterface;
 
 /**
