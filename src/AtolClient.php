@@ -84,14 +84,16 @@ class AtolClient
 
         $url = $this->account . $model;
         try {
-            return $this->client->request($method, $url, $options);
+            $response = $this->client->request($method, $url, $options);
         } catch (Throwable $throwable) {
             $this->refreshToken();
             $options['headers'] = [
                 'Token' => $this->cache->get('AtolApiToken ' . $this->userLogin)
             ];
-            return $this->client->request($method, $url, $options);
+
+            $response = $this->client->request($method, $url, $options);
         }
+        return $response;
     }
 
     private function get(string $model, array $options): array
@@ -160,32 +162,40 @@ class AtolClient
      */
     private function getNewToken(): string
     {
+        $model = 'getToken';
+        $method = 'POST';
+        # Для получения токена структура запроса: {{url_v4}}/{{possystem}}/{{api_version}}/getToken
+        $url = mb_substr($this->account, 0, -2) . $model;
+        $options = [
+            "login" => $this->userLogin,
+            "pass" => $this->integrationPassword
+        ];
+        $params = [
+            'headers' => [
+                'Content-Type' => 'application/json'
+            ],
+            'body' => json_encode($options)
+        ];
+        $response = null;
         try {
-            $model = 'getToken';
-            $method = 'POST';
-            # Для получения токена структура запроса: {{url_v4}}/{{possystem}}/{{api_version}}/getToken
-            $url = mb_substr($this->account, 0, -2) . $model;
-            $options = [
-                "login" => $this->userLogin,
-                "pass" => $this->integrationPassword
-            ];
-            $params = [
-                'headers' => [
-                    'Content-Type' => 'application/json'
-                ],
-                'body' => json_encode($options)
-            ];
-            $request = $this->client->request($method, $url, $params)->toArray(false);
-            $this->token = $request['token'];
+            $request = $this->client->request($method, $url, $params);
+            $response = $request->toArray(false);
+
+            if (array_key_exists('error', $response) && !is_null($response['error'])) {
+                throw new JsonException(json_encode($response, JSON_UNESCAPED_UNICODE), $request->getStatusCode());
+            }
+
+            $this->token = $response['token'];
+            return $this->token;
         } catch (Throwable $throwable) {
             $this->log('error', 'Ошибка при получении токена', [
                 'code' => $throwable->getCode(),
                 'line' => $throwable->getLine(),
-                'message' => $throwable->getMessage()
+                'message' => $throwable->getMessage(),
+                'response' => $response
             ]);
             throw new JsonException($throwable->getMessage(), $throwable->getCode());
         }
-        return $this->token;
     }
 
     /**
